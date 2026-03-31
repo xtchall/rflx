@@ -1,0 +1,20 @@
+[project]
+name = "rflx"
+version = "0.1.0"
+description = "RAG Knowledge Base — Reflex Frontend"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "reflex>=0.8.28.post1",
+    # RAG engine
+    "pydantic-ai>=0.7.4",
+    "asyncpg>=0.30.0",
+    "openai>=1.0.0",
+    "python-dotenv>=1.0.0",
+    "numpy>=2.0.2",
+    # Document processing
+    "docling>=2.55.0",
+    "hf-xet>=1.1.8",
+    "openai-whisper>=20250625",
+    "transformers>=4.40.0",
+]
