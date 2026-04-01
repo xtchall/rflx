@@ -63,7 +63,7 @@ async def _search_knowledge_base(query: str, limit: int = 5) -> str:
             formatted.append(
                 f"{i}. **{row['title']}** (similarity: {row['similarity']:.3f})\n"
                 f"   Source: `{row['source']}`\n"
-                f"   Content: {row['content'][:500]}...\n"
+                f"   Content: {row['content']}\n"
             )
         return "\n".join(formatted)
 
