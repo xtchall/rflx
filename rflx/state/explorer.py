@@ -12,6 +12,7 @@ from utils.db_utils import (
     get_chunk_details as db_get_chunk,
     get_document,
     get_document_chunks,
+    hybrid_search,
     initialize_database,
     search_vectors,
 )
@@ -136,7 +137,7 @@ class ExplorerState(rx.State):
             embedding_str = "[" + ",".join(map(str, embedding)) + "]"
 
             await initialize_database()
-            rows = await search_vectors(embedding_str, limit)
+            rows = await hybrid_search(query, embedding_str, limit)
 
             results = [
                 SearchResult(
@@ -146,7 +147,7 @@ class ExplorerState(rx.State):
                     source=r["source"],
                     content=r["content"],
                     chunk_index=r["chunk_index"],
-                    similarity=r["similarity"],
+                    similarity=r.get("rrf_score", r.get("similarity", 0.0)),
                     chunk_metadata=r.get("chunk_metadata", {}),
                     doc_metadata=r.get("doc_metadata", {}),
                 )

@@ -20,7 +20,7 @@ from pydantic_ai.messages import (
     ToolReturnPart,
 )
 
-from utils.db_utils import acquire, initialize_database
+from utils.db_utils import hybrid_search, initialize_database
 from utils.providers import get_embedding_client, get_embedding_model, get_llm_model
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 async def _search_knowledge_base(query: str, limit: int = 5) -> str:
-    """Semantic search over the knowledge base."""
+    """Hybrid search (keyword + vector with RRF) over the knowledge base."""
     try:
         client = get_embedding_client()
         embedding_model = get_embedding_model()
@@ -41,19 +41,7 @@ async def _search_knowledge_base(query: str, limit: int = 5) -> str:
 
         await initialize_database()
 
-        async with acquire() as conn:
-            results = await conn.fetch(
-                """
-                SELECT c.content, c.metadata, d.title, d.source,
-                       1 - (c.embedding <=> $1::vector) as similarity
-                FROM chunks c
-                JOIN documents d ON c.document_id = d.id
-                ORDER BY c.embedding <=> $1::vector
-                LIMIT $2
-                """,
-                embedding_str,
-                limit,
-            )
+        results = await hybrid_search(query, embedding_str, limit)
 
         if not results:
             return "No relevant information found in the knowledge base."
@@ -61,7 +49,7 @@ async def _search_knowledge_base(query: str, limit: int = 5) -> str:
         formatted = []
         for i, row in enumerate(results, 1):
             formatted.append(
-                f"{i}. **{row['title']}** (similarity: {row['similarity']:.3f})\n"
+                f"{i}. **{row['title']}** (score: {row['rrf_score']:.4f})\n"
                 f"   Source: `{row['source']}`\n"
                 f"   Content: {row['content']}\n"
             )
