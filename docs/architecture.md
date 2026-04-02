@@ -60,4 +60,4 @@ The PydanticAI agent is created once at module level (`_agent` in `chat.py`) and
 
 - **Core Package extraction** — The shared engine files are currently copied between docl and rflx. A future step is to extract them into a local package that both projects depend on.
 - **Markdown chunking** — `.md` files skip Docling and fall back to SimpleChunker (paragraph splitting). Structure-aware markdown chunking would improve chunk quality.
-- **Admin/user segregation** — Admin tools (ingestion config, chunk inspector, agent settings) are currently mixed with user-facing pages. A planned refactor moves admin features under an `/admin/` route prefix.
+- **Admin/user segregation** — Admin tools (ingestion config, chunk inspector, agent settings) are currently mixed with user-facing pages. Rather than a standalone UI refactor, this will be handled via `rx.cond(is_admin, ...)` when auth and roles are added.
