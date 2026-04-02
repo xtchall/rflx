@@ -61,6 +61,9 @@ class SettingsState(rx.State):
     openai_key_preview: str = ""
     db_url_preview: str = ""
 
+    # Save feedback
+    save_status: str = ""
+
     # Connection test
     connection_test_result: str = ""
     connection_test_success: bool = False
@@ -91,6 +94,7 @@ class SettingsState(rx.State):
 
     def save_agent_settings(self):
         """Save agent settings and invalidate cached agent."""
+        self.save_status = "saved"
         _shared_config["system_prompt"] = self.system_prompt
         _shared_config["temperature"] = self.temperature
         _shared_config["max_tokens"] = self.max_tokens
@@ -165,8 +169,7 @@ class SettingsState(rx.State):
 
     def save_ui_settings(self):
         """Save UI preferences."""
-        # Stored in state, persists for the session
-        pass
+        self.save_status = "saved"
 
     def reset_all_settings(self):
         """Reset everything to defaults."""

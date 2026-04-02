@@ -5,6 +5,15 @@ import reflex as rx
 from rflx.state.settings import SettingsState
 
 
+def _save_feedback() -> rx.Component:
+    """Show save confirmation callout."""
+    return rx.cond(
+        SettingsState.save_status == "saved",
+        rx.callout("Settings saved.", icon="check", color_scheme="green"),
+        rx.fragment(),
+    )
+
+
 # ---------------------------------------------------------------------------
 # Agent settings tab
 # ---------------------------------------------------------------------------
@@ -39,7 +48,7 @@ def _agent_settings_tab() -> rx.Component:
                     min=0.0,
                     max=2.0,
                     step=0.1,
-                    default_value=[0.7],
+                    value=[SettingsState.temperature],
                     on_value_commit=SettingsState.set_temperature,
                 ),
                 spacing="1",
@@ -80,7 +89,7 @@ def _agent_settings_tab() -> rx.Component:
                     min=0.0,
                     max=1.0,
                     step=0.05,
-                    default_value=[0.0],
+                    value=[SettingsState.similarity_threshold],
                     on_value_commit=SettingsState.set_similarity_threshold,
                 ),
                 spacing="1",
@@ -100,6 +109,7 @@ def _agent_settings_tab() -> rx.Component:
             ),
             spacing="2",
         ),
+        _save_feedback(),
         width="100%",
         spacing="4",
     )
@@ -272,10 +282,11 @@ def _ui_preferences_tab() -> rx.Component:
                 variant="ghost",
                 color_scheme="red",
                 on_click=SettingsState.reset_all_settings,
-                size="3",
+                size="2",
             ),
             spacing="2",
         ),
+        _save_feedback(),
         width="100%",
         spacing="4",
     )
