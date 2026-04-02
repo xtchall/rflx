@@ -109,13 +109,21 @@ def _upload_section() -> rx.Component:
 
 
 def _ingestion_result_row(r: IngestionResultInfo) -> rx.Component:
-    return rx.text(
-        rx.cond(r.errors.length() == 0, "  ", "  "),
-        r.title,
-        f" — ",
-        r.chunks_created.to(str),
-        " chunks",
-        size="2",
+    return rx.hstack(
+        rx.cond(
+            r.errors.length() == 0,
+            rx.icon("circle_check", color="var(--green-9)", size=14),
+            rx.icon("circle_x", color="var(--red-9)", size=14),
+        ),
+        rx.text(
+            r.title,
+            " — ",
+            r.chunks_created.to(str),
+            " chunks",
+            size="2",
+        ),
+        spacing="2",
+        align="center",
     )
 
 

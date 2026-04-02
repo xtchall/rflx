@@ -216,7 +216,11 @@ def _api_keys_tab() -> rx.Component:
         ),
         rx.cond(
             SettingsState.connection_test_result != "",
-            rx.callout(SettingsState.connection_test_result, icon="zap"),
+            rx.cond(
+                SettingsState.connection_test_success,
+                rx.callout(SettingsState.connection_test_result, icon="check", color_scheme="green"),
+                rx.callout(SettingsState.connection_test_result, icon="circle_x", color_scheme="red"),
+            ),
             rx.fragment(),
         ),
         width="100%",

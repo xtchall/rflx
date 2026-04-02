@@ -139,11 +139,28 @@ def chat_page() -> rx.Component:
         rx.hstack(
             rx.heading("Chat with Your Knowledge Base", size="6"),
             rx.spacer(),
-            rx.button(
-                "Clear",
-                variant="ghost",
-                size="2",
-                on_click=ChatState.clear_chat,
+            rx.alert_dialog.root(
+                rx.alert_dialog.trigger(
+                    rx.button("Clear", variant="ghost", size="2"),
+                ),
+                rx.alert_dialog.content(
+                    rx.alert_dialog.title("Clear Chat History"),
+                    rx.alert_dialog.description(
+                        "This will delete all messages in this conversation.",
+                    ),
+                    rx.flex(
+                        rx.alert_dialog.cancel(rx.button("Cancel", variant="soft")),
+                        rx.alert_dialog.action(
+                            rx.button(
+                                "Clear",
+                                color_scheme="red",
+                                on_click=ChatState.clear_chat,
+                            ),
+                        ),
+                        spacing="3",
+                        justify="end",
+                    ),
+                ),
             ),
             width="100%",
             align="center",

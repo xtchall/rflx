@@ -29,12 +29,17 @@ def _search_tab() -> rx.Component:
                     size="3",
                     width="100%",
                 ),
-                rx.input(
-                    value=ExplorerState.search_limit.to(str),
-                    on_change=ExplorerState.set_search_limit,
-                    type="number",
-                    width="80px",
-                    size="3",
+                rx.tooltip(
+                    rx.input(
+                        value=ExplorerState.search_limit.to(str),
+                        on_change=ExplorerState.set_search_limit,
+                        type="number",
+                        width="80px",
+                        size="3",
+                        placeholder="10",
+                        aria_label="Number of results",
+                    ),
+                    content="Max results to return",
                 ),
                 rx.button(
                     "Search",
@@ -184,7 +189,7 @@ def _document_detail_view() -> rx.Component:
         rx.flex(
             rx.heading(doc.title, size="5"),
             rx.spacer(),
-            rx.button("Back", variant="ghost", size="2", on_click=ExplorerState.back_from_document),
+            rx.button(rx.hstack(rx.icon("arrow_left", size=14), rx.text("Back"), spacing="1"), variant="ghost", size="2", on_click=ExplorerState.back_from_document),
             width="100%",
             align="center",
         ),
@@ -301,7 +306,7 @@ def _chunk_detail_view() -> rx.Component:
         rx.flex(
             rx.heading("Chunk from: " + c.title, size="5"),
             rx.spacer(),
-            rx.button("Back", variant="ghost", size="2", on_click=ExplorerState.back_from_chunk),
+            rx.button(rx.hstack(rx.icon("arrow_left", size=14), rx.text("Back"), spacing="1"), variant="ghost", size="2", on_click=ExplorerState.back_from_chunk),
             width="100%",
             align="center",
         ),

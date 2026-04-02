@@ -63,6 +63,7 @@ class SettingsState(rx.State):
 
     # Connection test
     connection_test_result: str = ""
+    connection_test_success: bool = False
 
     # UI preferences
     show_timestamps: bool = False
@@ -154,10 +155,13 @@ class SettingsState(rx.State):
             if response.data:
                 dim = len(response.data[0].embedding)
                 self.connection_test_result = f"Success! Embedding dimension: {dim}"
+                self.connection_test_success = True
             else:
                 self.connection_test_result = "Failed: empty response"
+                self.connection_test_success = False
         except Exception as e:
             self.connection_test_result = f"Failed: {e}"
+            self.connection_test_success = False
 
     def save_ui_settings(self):
         """Save UI preferences."""

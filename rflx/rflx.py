@@ -13,8 +13,26 @@ from rflx.state.home import HomeState
 from rflx.state.settings import SettingsState
 
 
-def _nav_link(text: str, href: str) -> rx.Component:
-    return rx.link(text, href=href, size="3", underline="hover")
+def _nav_link(text: str, href: str, icon: str) -> rx.Component:
+    is_active = rx.State.router.page.path == href
+    return rx.link(
+        rx.hstack(
+            rx.icon(icon, size=16),
+            rx.text(text),
+            spacing="2",
+            align="center",
+        ),
+        href=href,
+        size="3",
+        underline="none",
+        weight=rx.cond(is_active, "bold", "regular"),
+        color=rx.cond(is_active, "var(--accent-11)", "inherit"),
+        background=rx.cond(is_active, "var(--accent-3)", "transparent"),
+        padding="6px 8px",
+        border_radius="var(--radius-2)",
+        width="100%",
+        display="block",
+    )
 
 
 def layout(page: rx.Component) -> rx.Component:
@@ -25,11 +43,11 @@ def layout(page: rx.Component) -> rx.Component:
             rx.vstack(
                 rx.heading("docl", size="5", weight="bold"),
                 rx.separator(),
-                _nav_link("Home", "/"),
-                _nav_link("Chat", "/chat"),
-                _nav_link("Documents", "/documents"),
-                _nav_link("Explorer", "/explorer"),
-                _nav_link("Settings", "/settings"),
+                _nav_link("Home", "/", "home"),
+                _nav_link("Chat", "/chat", "message_circle"),
+                _nav_link("Documents", "/documents", "file_text"),
+                _nav_link("Explorer", "/explorer", "search"),
+                _nav_link("Settings", "/settings", "settings"),
                 spacing="3",
                 padding="4",
                 height="100%",
