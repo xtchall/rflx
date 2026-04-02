@@ -80,6 +80,28 @@ def _message_bubble(msg: ChatMessage) -> rx.Component:
     )
 
 
+def _empty_state() -> rx.Component:
+    """Show placeholder when no messages exist."""
+    return rx.cond(
+        ChatState.messages.length() == 0,
+        rx.center(
+            rx.vstack(
+                rx.icon("message_circle", size=32, color="var(--gray-7)"),
+                rx.text("Ask anything about your documents", size="3", color="var(--gray-9)"),
+                rx.text(
+                    "Try: \"What are the key findings?\" or \"Summarize the handbook\"",
+                    size="2",
+                    color="var(--gray-8)",
+                ),
+                align="center",
+                spacing="2",
+            ),
+            flex="1",
+        ),
+        rx.fragment(),
+    )
+
+
 def _streaming_indicator() -> rx.Component:
     """Show the in-progress response while streaming."""
     return rx.cond(
@@ -87,7 +109,7 @@ def _streaming_indicator() -> rx.Component:
         rx.box(
             rx.cond(
                 ChatState.current_response != "",
-                rx.markdown(ChatState.current_response + " ..."),
+                rx.text(ChatState.current_response, size="3", white_space="pre-wrap"),
                 rx.flex(
                     rx.spinner(size="2"),
                     rx.text("Thinking...", size="2", color="var(--gray-11)"),
@@ -134,8 +156,8 @@ def _chat_input() -> rx.Component:
 
 def chat_page() -> rx.Component:
     """The chat page."""
-    return rx.vstack(
-        # Header
+    return rx.flex(
+        # Header (fixed)
         rx.hstack(
             rx.heading("Chat with Your Knowledge Base", size="6"),
             rx.spacer(),
@@ -164,22 +186,29 @@ def chat_page() -> rx.Component:
             ),
             width="100%",
             align="center",
+            flex_shrink="0",
         ),
-        rx.separator(),
-        # Messages
-        rx.vstack(
-            rx.foreach(ChatState.messages, _message_bubble),
-            _streaming_indicator(),
-            width="100%",
-            spacing="3",
+        rx.separator(flex_shrink="0"),
+        # Messages (scrollable region)
+        rx.box(
+            rx.vstack(
+                _empty_state(),
+                rx.foreach(ChatState.messages, _message_bubble),
+                _streaming_indicator(),
+                width="100%",
+                spacing="3",
+                padding_y="4",
+            ),
             flex="1",
             overflow_y="auto",
-            padding_y="4",
+            width="100%",
+            min_height="0",
         ),
-        # Input
+        # Input (pinned to bottom)
         _chat_input(),
-        width="100%",
-        height="calc(100vh - 4rem)",
+        direction="column",
+        height="100%",
         padding="4",
-        spacing="3",
+        gap="3",
+        width="100%",
     )
