@@ -280,6 +280,21 @@ async def get_db_stats() -> Dict[str, Any]:
         return {"documents": doc_count, "chunks": chunk_count}
 
 
+def _format_search_row(row, score_key: str = "similarity") -> Dict[str, Any]:
+    """Convert a search result DB row to a dict."""
+    return {
+        "chunk_id": row["chunk_id"],
+        "content": row["content"],
+        "chunk_metadata": _parse_json(row["chunk_metadata"]),
+        "chunk_index": row["chunk_index"],
+        "document_id": row["document_id"],
+        "title": row["title"],
+        "source": row["source"],
+        "doc_metadata": _parse_json(row["doc_metadata"]),
+        score_key: float(row[score_key]),
+    }
+
+
 async def search_vectors(embedding_str: str, limit: int = 10) -> List[Dict[str, Any]]:
     """Semantic search using a pre-formatted embedding string."""
     async with acquire() as conn:
@@ -298,20 +313,7 @@ async def search_vectors(embedding_str: str, limit: int = 10) -> List[Dict[str, 
             embedding_str,
             limit,
         )
-        return [
-            {
-                "chunk_id": row["chunk_id"],
-                "content": row["content"],
-                "chunk_metadata": _parse_json(row["chunk_metadata"]),
-                "chunk_index": row["chunk_index"],
-                "document_id": row["document_id"],
-                "title": row["title"],
-                "source": row["source"],
-                "doc_metadata": _parse_json(row["doc_metadata"]),
-                "similarity": float(row["similarity"]),
-            }
-            for row in rows
-        ]
+        return [_format_search_row(row) for row in rows]
 
 
 def _build_or_tsquery(query_text: str) -> str:
@@ -382,19 +384,7 @@ async def hybrid_search(
             pool_size,
             limit,
         )
-        return [
-            {
-                "chunk_id": row["chunk_id"],
-                "content": row["content"],
-                "chunk_metadata": _parse_json(row["chunk_metadata"]),
-                "chunk_index": row["chunk_index"],
-                "document_id": row["document_id"],
-                "title": row["title"],
-                "source": row["source"],
-                "doc_metadata": _parse_json(row["doc_metadata"]),
-                "rrf_score": float(row["rrf_score"]),
-            }
-            for row in rows
+        return [_format_search_row(row, "rrf_score") for row in rows
         ]
 
 

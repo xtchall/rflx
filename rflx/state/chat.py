@@ -190,7 +190,8 @@ class ChatState(rx.State):
                 )
                 self.current_response = ""
                 self.is_streaming = False
-                self._message_history = all_messages
+                # Keep last 20 messages to bound memory and token cost
+                self._message_history = all_messages[-20:]
 
         except Exception as e:
             logger.error(f"Chat error: {e}", exc_info=True)
