@@ -29,19 +29,18 @@ def get_llm_model() -> OpenAIModel:
     return OpenAIModel(llm_choice, provider=OpenAIProvider(api_key=api_key))
 
 
+_embedding_client: openai.AsyncOpenAI | None = None
+
+
 def get_embedding_client() -> openai.AsyncOpenAI:
-    """
-    Get OpenAI client for embeddings.
-    
-    Returns:
-        Configured OpenAI client for embeddings
-    """
-    api_key = os.getenv('OPENAI_API_KEY')
-    
-    if not api_key:
-        raise ValueError("OPENAI_API_KEY environment variable is required")
-    
-    return openai.AsyncOpenAI(api_key=api_key)
+    """Get or create the singleton OpenAI client for embeddings."""
+    global _embedding_client
+    if _embedding_client is None:
+        api_key = os.getenv('OPENAI_API_KEY')
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY environment variable is required")
+        _embedding_client = openai.AsyncOpenAI(api_key=api_key)
+    return _embedding_client
 
 
 def get_embedding_model() -> str:

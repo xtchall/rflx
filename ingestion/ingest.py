@@ -446,26 +446,28 @@ class DocumentIngestionPipeline:
 
                 document_id = document_result["id"]
 
-                # Insert chunks
+                # Batch insert chunks
+                chunk_records = []
                 for chunk in chunks:
-                    # Convert embedding to PostgreSQL vector string format
                     embedding_data = None
                     if hasattr(chunk, "embedding") and chunk.embedding:
-                        # PostgreSQL vector format: '[1.0,2.0,3.0]' (no spaces after commas)
                         embedding_data = "[" + ",".join(map(str, chunk.embedding)) + "]"
-
-                    await conn.execute(
-                        """
-                        INSERT INTO chunks (document_id, content, embedding, chunk_index, metadata, token_count)
-                        VALUES ($1::uuid, $2, $3::vector, $4, $5, $6)
-                        """,
+                    chunk_records.append((
                         document_id,
                         chunk.content,
                         embedding_data,
                         chunk.index,
                         json.dumps(chunk.metadata, cls=DateTimeEncoder),
                         chunk.token_count,
-                    )
+                    ))
+
+                await conn.executemany(
+                    """
+                    INSERT INTO chunks (document_id, content, embedding, chunk_index, metadata, token_count)
+                    VALUES ($1::uuid, $2, $3::vector, $4, $5, $6)
+                    """,
+                    chunk_records,
+                )
 
                 return document_id
 
