@@ -167,7 +167,6 @@ class ExplorerState(rx.State):
                        (SELECT COUNT(*) FROM chunks WHERE document_id = documents.id) as chunk_count
                 FROM documents
                 ORDER BY created_at DESC
-                LIMIT 10
                 """
             )
             self.recent_documents = [dict(d) for d in docs]
@@ -220,7 +219,6 @@ class ExplorerState(rx.State):
                 FROM chunks c
                 JOIN documents d ON c.document_id = d.id
                 ORDER BY d.created_at DESC, c.chunk_index ASC
-                LIMIT 20
                 """
             )
             self.recent_chunks = [dict(r) for r in rows]
