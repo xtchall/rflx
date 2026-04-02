@@ -268,6 +268,15 @@ def _recent_chunks_list() -> rx.Component:
         rx.cond(
             ExplorerState.recent_chunks.length() > 0,
             rx.vstack(
+                rx.text(
+                    "Showing ",
+                    ExplorerState.recent_chunks.length().to(str),
+                    " of ",
+                    ExplorerState.total_chunk_count.to(str),
+                    " chunks",
+                    size="2",
+                    color="var(--gray-11)",
+                ),
                 rx.foreach(
                     ExplorerState.recent_chunks,
                     lambda c: rx.card(

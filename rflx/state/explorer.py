@@ -101,6 +101,7 @@ class ExplorerState(rx.State):
     viewing_chunk: bool = False
     chunk_detail: ChunkDetail = ChunkDetail()
     recent_chunks: list[dict[str, Any]] = []
+    total_chunk_count: int = 0
     similar_chunks: list[SimilarChunk] = []
     is_finding_similar: bool = False
 
@@ -209,9 +210,10 @@ class ExplorerState(rx.State):
     # -- Chunk inspector ---------------------------------------------------
 
     async def load_recent_chunks(self):
-        """Load recent chunks for the inspector."""
+        """Load recent chunks for the inspector (limited to 50, with total count)."""
 
         async with acquire() as conn:
+            self.total_chunk_count = await conn.fetchval("SELECT COUNT(*) FROM chunks")
             rows = await conn.fetch(
                 """
                 SELECT c.id::text, c.content, c.chunk_index, c.token_count,
@@ -219,6 +221,7 @@ class ExplorerState(rx.State):
                 FROM chunks c
                 JOIN documents d ON c.document_id = d.id
                 ORDER BY d.created_at DESC, c.chunk_index ASC
+                LIMIT 50
                 """
             )
             self.recent_chunks = [dict(r) for r in rows]
