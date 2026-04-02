@@ -9,7 +9,11 @@ def _stat_card(label: str, value: rx.Var, description: str) -> rx.Component:
     return rx.card(
         rx.vstack(
             rx.text(label, size="2", color="var(--gray-11)", weight="medium"),
-            rx.heading(value, size="7"),
+            rx.cond(
+                HomeState.loading,
+                rx.skeleton(height="36px", width="60px"),
+                rx.heading(value, size="7"),
+            ),
             rx.text(description, size="1", color="var(--gray-9)"),
             spacing="1",
         ),
@@ -21,6 +25,21 @@ def home_page() -> rx.Component:
     return rx.vstack(
         rx.heading("Dashboard", size="6"),
         rx.separator(),
+        # Zero-state CTA
+        rx.cond(
+            (~HomeState.loading) & (HomeState.doc_count == 0),
+            rx.callout(
+                rx.text(
+                    "Your knowledge base is empty. ",
+                    rx.link("Upload documents", href="/documents"),
+                    " to get started.",
+                ),
+                icon="inbox",
+                color_scheme="blue",
+                width="100%",
+            ),
+            rx.fragment(),
+        ),
         # Stats row
         rx.grid(
             _stat_card("Documents", HomeState.doc_count.to(str), "Total in knowledge base"),
@@ -29,9 +48,13 @@ def home_page() -> rx.Component:
                 rx.vstack(
                     rx.text("Database", size="2", color="var(--gray-11)", weight="medium"),
                     rx.cond(
-                        HomeState.db_connected,
-                        rx.badge("Connected", color_scheme="green", size="2"),
-                        rx.badge("Disconnected", color_scheme="red", size="2"),
+                        HomeState.loading,
+                        rx.skeleton(height="24px", width="80px"),
+                        rx.cond(
+                            HomeState.db_connected,
+                            rx.badge("Connected", color_scheme="green", size="2"),
+                            rx.badge("Disconnected", color_scheme="red", size="2"),
+                        ),
                     ),
                     rx.text("PostgreSQL + pgvector", size="1", color="var(--gray-9)"),
                     spacing="1",
@@ -41,7 +64,11 @@ def home_page() -> rx.Component:
             rx.card(
                 rx.vstack(
                     rx.text("LLM", size="2", color="var(--gray-11)", weight="medium"),
-                    rx.code(HomeState.llm_model, size="3"),
+                    rx.cond(
+                        HomeState.loading,
+                        rx.skeleton(height="24px", width="100px"),
+                        rx.code(HomeState.llm_model, size="3"),
+                    ),
                     rx.text(HomeState.embedding_model, size="1", color="var(--gray-9)"),
                     spacing="1",
                 ),
