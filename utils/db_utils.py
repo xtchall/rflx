@@ -326,7 +326,7 @@ async def hybrid_search(
             WITH keyword_results AS (
                 SELECT c.id,
                        ROW_NUMBER() OVER (
-                           ORDER BY ts_rank_cd(c.search_vector, to_tsquery('english', $1)) DESC
+                           ORDER BY ts_rank_cd(c.search_vector, to_tsquery('english', $1), 4) DESC
                        ) as kw_rank
                 FROM chunks c
                 WHERE c.search_vector @@ to_tsquery('english', $1)
