@@ -297,6 +297,71 @@ async def search_vectors(embedding_str: str, limit: int = 10) -> List[Dict[str, 
         ]
 
 
+async def hybrid_search(
+    query_text: str, embedding_str: str, limit: int = 10
+) -> List[Dict[str, Any]]:
+    """Hybrid search combining keyword (tsvector) and vector (pgvector) with RRF."""
+    pool_size = limit * 3  # fetch more candidates from each method for better fusion
+    async with acquire() as conn:
+        rows = await conn.fetch(
+            """
+            WITH keyword_results AS (
+                SELECT c.id,
+                       ROW_NUMBER() OVER (
+                           ORDER BY ts_rank_cd(c.search_vector, plainto_tsquery('english', $1)) DESC
+                       ) as kw_rank
+                FROM chunks c
+                WHERE c.search_vector @@ plainto_tsquery('english', $1)
+                LIMIT $3
+            ),
+            vector_results AS (
+                SELECT c.id,
+                       ROW_NUMBER() OVER (
+                           ORDER BY c.embedding <=> $2::vector
+                       ) as vec_rank
+                FROM chunks c
+                WHERE c.embedding IS NOT NULL
+                LIMIT $3
+            ),
+            combined AS (
+                SELECT COALESCE(k.id, v.id) as id,
+                       COALESCE(1.0 / (60 + k.kw_rank), 0.0)
+                         + COALESCE(1.0 / (60 + v.vec_rank), 0.0) as rrf_score
+                FROM keyword_results k
+                FULL OUTER JOIN vector_results v ON k.id = v.id
+            )
+            SELECT c.id::text as chunk_id, c.content,
+                   c.metadata as chunk_metadata, c.chunk_index,
+                   d.id::text as document_id, d.title, d.source,
+                   d.metadata as doc_metadata,
+                   combined.rrf_score
+            FROM combined
+            JOIN chunks c ON c.id = combined.id
+            JOIN documents d ON c.document_id = d.id
+            ORDER BY combined.rrf_score DESC
+            LIMIT $4
+            """,
+            query_text,
+            embedding_str,
+            pool_size,
+            limit,
+        )
+        return [
+            {
+                "chunk_id": row["chunk_id"],
+                "content": row["content"],
+                "chunk_metadata": json.loads(row["chunk_metadata"]) if row["chunk_metadata"] else {},
+                "chunk_index": row["chunk_index"],
+                "document_id": row["document_id"],
+                "title": row["title"],
+                "source": row["source"],
+                "doc_metadata": json.loads(row["doc_metadata"]) if row["doc_metadata"] else {},
+                "rrf_score": float(row["rrf_score"]),
+            }
+            for row in rows
+        ]
+
+
 async def find_similar_chunks(
     embedding_str: str, limit: int = 6, exclude_chunk_id: Optional[str] = None
 ) -> List[Dict[str, Any]]:
