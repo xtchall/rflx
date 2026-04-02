@@ -39,7 +39,7 @@ class ChunkingConfig:
     min_chunk_size: int = 100  # Minimum chunk size
     use_semantic_splitting: bool = True  # Use HybridChunker (recommended)
     preserve_structure: bool = True  # Preserve document structure
-    max_tokens: int = 512  # Maximum tokens for embedding models
+    max_tokens: int = 256  # Maximum tokens — smaller chunks = more focused embeddings
 
     def __post_init__(self):
         """Validate configuration."""

@@ -290,6 +290,8 @@ class DocumentIngestionPipeline:
             ".xls",
             ".html",
             ".htm",
+            ".md",
+            ".markdown",
         ]
 
         if file_ext in docling_formats:
