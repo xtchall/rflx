@@ -20,8 +20,8 @@ from pydantic_ai.messages import (
     ToolReturnPart,
 )
 
-from utils.db_utils import hybrid_search, initialize_database
-from utils.providers import get_embedding_client, get_embedding_model, get_llm_model
+from utils.db_utils import embed_for_search, hybrid_search
+from utils.providers import get_llm_model
 
 logger = logging.getLogger(__name__)
 
@@ -32,15 +32,7 @@ logger = logging.getLogger(__name__)
 async def _search_knowledge_base(query: str, limit: int = 5) -> str:
     """Hybrid search (keyword + vector with RRF) over the knowledge base."""
     try:
-        client = get_embedding_client()
-        embedding_model = get_embedding_model()
-
-        response = await client.embeddings.create(input=query, model=embedding_model)
-        query_embedding = response.data[0].embedding
-        embedding_str = "[" + ",".join(map(str, query_embedding)) + "]"
-
-        await initialize_database()
-
+        embedding_str = await embed_for_search(query)
         results = await hybrid_search(query, embedding_str, limit)
 
         if not results:
@@ -65,18 +57,11 @@ async def _search_knowledge_base(query: str, limit: int = 5) -> str:
 
 _agent: Agent | None = None
 
-SYSTEM_PROMPT = """You are an intelligent knowledge assistant with access to a document knowledge base.
 
-Your responsibilities:
-1. Always search the knowledge base before answering questions
-2. Provide accurate, contextual answers based on the retrieved information
-3. Cite your sources explicitly (document titles and sources)
-4. If information is not in the knowledge base, say so clearly
-5. Ask for clarification if the question is ambiguous
-6. Be concise but thorough in your responses
-
-Remember: Always ground your answers in the retrieved documents and cite sources!
-"""
+def reset_agent():
+    """Invalidate the agent singleton so it's recreated with new settings."""
+    global _agent
+    _agent = None
 
 
 def _get_agent() -> Agent:
@@ -84,9 +69,9 @@ def _get_agent() -> Agent:
     if _agent is not None:
         return _agent
 
-    from rflx.state.settings import get_config
+    from rflx.state.settings import DEFAULT_SYSTEM_PROMPT, get_config
 
-    system_prompt = get_config("system_prompt", SYSTEM_PROMPT)
+    system_prompt = get_config("system_prompt", DEFAULT_SYSTEM_PROMPT)
     agent = Agent(get_llm_model(), system_prompt=system_prompt)
 
     @agent.tool

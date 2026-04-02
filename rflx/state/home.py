@@ -4,7 +4,7 @@ import logging
 
 import reflex as rx
 
-from utils.db_utils import get_db_stats, initialize_database, test_connection
+from utils.db_utils import get_db_stats, test_connection
 from utils.providers import get_model_info
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,6 @@ class HomeState(rx.State):
         """Load dashboard stats on page load."""
         self.loading = True
         try:
-            await initialize_database()
             connected = await test_connection()
             self.db_connected = connected
 

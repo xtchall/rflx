@@ -101,10 +101,9 @@ class SettingsState(rx.State):
         _shared_config["default_search_limit"] = self.default_search_limit
         _shared_config["similarity_threshold"] = self.similarity_threshold
 
-        # Force agent recreation in ChatState
-        import rflx.state.chat as chat_mod
+        from rflx.state.chat import reset_agent
 
-        chat_mod._agent = None
+        reset_agent()
 
     def reset_agent_settings(self):
         """Reset agent settings to defaults."""

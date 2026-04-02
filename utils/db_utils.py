@@ -8,6 +8,7 @@ Reflex event handlers are natively async, so we use asyncpg directly.
 import json
 import logging
 import os
+import re
 from contextlib import asynccontextmanager
 from typing import Any, Dict, List, Optional
 
@@ -88,7 +89,7 @@ async def get_document(document_id: str) -> Optional[Dict[str, Any]]:
                 "title": result["title"],
                 "source": result["source"],
                 "content": result["content"],
-                "metadata": json.loads(result["metadata"]),
+                "metadata": _parse_json(result["metadata"]),
                 "created_at": result["created_at"].isoformat(),
                 "updated_at": result["updated_at"].isoformat(),
             }
@@ -132,7 +133,7 @@ async def list_documents(
                 "id": row["id"],
                 "title": row["title"],
                 "source": row["source"],
-                "metadata": json.loads(row["metadata"]),
+                "metadata": _parse_json(row["metadata"]),
                 "created_at": row["created_at"].isoformat(),
                 "updated_at": row["updated_at"].isoformat(),
                 "chunk_count": row["chunk_count"],
@@ -157,6 +158,22 @@ async def test_connection() -> bool:
     except Exception as e:
         logger.error(f"Database connection test failed: {e}")
         return False
+
+
+def _parse_json(val) -> dict:
+    """Parse a JSON string, returning empty dict for None/empty."""
+    return json.loads(val) if val else {}
+
+
+async def embed_for_search(query: str) -> str:
+    """Embed a query and return a pgvector-formatted string."""
+    from utils.providers import get_embedding_client, get_embedding_model
+
+    client = get_embedding_client()
+    model = get_embedding_model()
+    response = await client.embeddings.create(input=query, model=model)
+    embedding = response.data[0].embedding
+    return "[" + ",".join(map(str, embedding)) + "]"
 
 
 async def get_total_document_count() -> int:
@@ -206,7 +223,7 @@ async def get_document_chunks(document_id: str) -> List[Dict[str, Any]]:
                 "id": row["id"],
                 "content": row["content"],
                 "chunk_index": row["chunk_index"],
-                "metadata": json.loads(row["metadata"]) if row["metadata"] else {},
+                "metadata": _parse_json(row["metadata"]) if row["metadata"] else {},
                 "token_count": row["token_count"],
             }
             for row in rows
@@ -245,7 +262,7 @@ async def get_chunk_details(chunk_id: str) -> Optional[Dict[str, Any]]:
             "id": row["id"],
             "content": row["content"],
             "chunk_index": row["chunk_index"],
-            "metadata": json.loads(row["metadata"]) if row["metadata"] else {},
+            "metadata": _parse_json(row["metadata"]) if row["metadata"] else {},
             "token_count": row["token_count"],
             "embedding_dim": embedding_dim,
             "embedding_preview": embedding_preview,
@@ -285,12 +302,12 @@ async def search_vectors(embedding_str: str, limit: int = 10) -> List[Dict[str, 
             {
                 "chunk_id": row["chunk_id"],
                 "content": row["content"],
-                "chunk_metadata": json.loads(row["chunk_metadata"]) if row["chunk_metadata"] else {},
+                "chunk_metadata": _parse_json(row["chunk_metadata"]),
                 "chunk_index": row["chunk_index"],
                 "document_id": row["document_id"],
                 "title": row["title"],
                 "source": row["source"],
-                "doc_metadata": json.loads(row["doc_metadata"]) if row["doc_metadata"] else {},
+                "doc_metadata": _parse_json(row["doc_metadata"]),
                 "similarity": float(row["similarity"]),
             }
             for row in rows
@@ -304,8 +321,6 @@ def _build_or_tsquery(query_text: str) -> str:
     For RAG retrieval, OR is better — a chunk matching 'retention' and 'rate'
     should surface even if it doesn't also contain 'q4' and '2024'.
     """
-    import re
-
     # Keep only alphanumeric and spaces, then split
     cleaned = re.sub(r"[^\w\s]", " ", query_text)
     words = [w for w in cleaned.split() if len(w) >= 2]
@@ -371,12 +386,12 @@ async def hybrid_search(
             {
                 "chunk_id": row["chunk_id"],
                 "content": row["content"],
-                "chunk_metadata": json.loads(row["chunk_metadata"]) if row["chunk_metadata"] else {},
+                "chunk_metadata": _parse_json(row["chunk_metadata"]),
                 "chunk_index": row["chunk_index"],
                 "document_id": row["document_id"],
                 "title": row["title"],
                 "source": row["source"],
-                "doc_metadata": json.loads(row["doc_metadata"]) if row["doc_metadata"] else {},
+                "doc_metadata": _parse_json(row["doc_metadata"]),
                 "rrf_score": float(row["rrf_score"]),
             }
             for row in rows

@@ -8,15 +8,13 @@ from pydantic import BaseModel
 
 from utils.db_utils import (
     acquire,
+    embed_for_search,
     find_similar_chunks as db_find_similar,
     get_chunk_details as db_get_chunk,
     get_document,
     get_document_chunks,
     hybrid_search,
-    initialize_database,
-    search_vectors,
 )
-from utils.providers import get_embedding_client, get_embedding_model
 
 logger = logging.getLogger(__name__)
 
@@ -130,13 +128,7 @@ class ExplorerState(rx.State):
             self.search_results = []
 
         try:
-            client = get_embedding_client()
-            model = get_embedding_model()
-            response = await client.embeddings.create(input=query, model=model)
-            embedding = response.data[0].embedding
-            embedding_str = "[" + ",".join(map(str, embedding)) + "]"
-
-            await initialize_database()
+            embedding_str = await embed_for_search(query)
             rows = await hybrid_search(query, embedding_str, limit)
 
             results = [
@@ -167,7 +159,7 @@ class ExplorerState(rx.State):
 
     async def load_recent_documents(self):
         """Load recent documents for the viewer."""
-        await initialize_database()
+
         async with acquire() as conn:
             docs = await conn.fetch(
                 """
@@ -182,7 +174,7 @@ class ExplorerState(rx.State):
 
     async def view_document(self, document_id: str):
         """Load and display a document."""
-        await initialize_database()
+
         doc = await get_document(document_id)
         if not doc:
             return
@@ -219,7 +211,7 @@ class ExplorerState(rx.State):
 
     async def load_recent_chunks(self):
         """Load recent chunks for the inspector."""
-        await initialize_database()
+
         async with acquire() as conn:
             rows = await conn.fetch(
                 """
@@ -235,7 +227,7 @@ class ExplorerState(rx.State):
 
     async def inspect_chunk(self, chunk_id: str):
         """Load chunk details for the inspector."""
-        await initialize_database()
+
         row = await db_get_chunk(chunk_id)
         if not row:
             return
@@ -268,7 +260,7 @@ class ExplorerState(rx.State):
             self.is_finding_similar = True
             chunk_id = self.chunk_detail.id
 
-        await initialize_database()
+
 
         # Get the chunk's embedding
         async with acquire() as conn:

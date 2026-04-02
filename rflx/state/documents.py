@@ -14,7 +14,7 @@ from utils.db_utils import (
     clear_all_documents as db_clear_all,
     delete_document as db_delete,
     get_total_document_count,
-    initialize_database,
+
     list_documents as db_list_documents,
 )
 from utils.models import IngestionConfig
@@ -71,7 +71,6 @@ class DocumentState(rx.State):
 
     async def load_documents(self):
         """Load documents for the current page."""
-        await initialize_database()
         self.total_count = await get_total_document_count()
         offset = self.current_page * self.docs_per_page
         rows = await db_list_documents(limit=self.docs_per_page, offset=offset)
@@ -175,7 +174,7 @@ class DocumentState(rx.State):
 
             results = await pipeline.ingest_documents()
 
-            await pipeline.close()
+            # Don't call pipeline.close() — it destroys the shared DB pool
 
             result_infos = [
                 IngestionResultInfo(
