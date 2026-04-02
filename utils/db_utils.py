@@ -297,21 +297,39 @@ async def search_vectors(embedding_str: str, limit: int = 10) -> List[Dict[str, 
         ]
 
 
+def _build_or_tsquery(query_text: str) -> str:
+    """Build an OR-based tsquery string from natural language.
+
+    plainto_tsquery uses AND, which requires ALL terms to match.
+    For RAG retrieval, OR is better — a chunk matching 'retention' and 'rate'
+    should surface even if it doesn't also contain 'q4' and '2024'.
+    """
+    # Strip non-alphanumeric, split into words, filter empties
+    words = [w.strip() for w in query_text.split() if w.strip()]
+    if not words:
+        return ""
+    return " | ".join(words)
+
+
 async def hybrid_search(
     query_text: str, embedding_str: str, limit: int = 10
 ) -> List[Dict[str, Any]]:
     """Hybrid search combining keyword (tsvector) and vector (pgvector) with RRF."""
     pool_size = limit * 3  # fetch more candidates from each method for better fusion
+    or_query = _build_or_tsquery(query_text)
+    if not or_query:
+        # Fall back to vector-only if no usable keywords
+        return await search_vectors(embedding_str, limit)
     async with acquire() as conn:
         rows = await conn.fetch(
             """
             WITH keyword_results AS (
                 SELECT c.id,
                        ROW_NUMBER() OVER (
-                           ORDER BY ts_rank_cd(c.search_vector, plainto_tsquery('english', $1)) DESC
+                           ORDER BY ts_rank_cd(c.search_vector, to_tsquery('english', $1)) DESC
                        ) as kw_rank
                 FROM chunks c
-                WHERE c.search_vector @@ plainto_tsquery('english', $1)
+                WHERE c.search_vector @@ to_tsquery('english', $1)
                 LIMIT $3
             ),
             vector_results AS (
@@ -341,7 +359,7 @@ async def hybrid_search(
             ORDER BY combined.rrf_score DESC
             LIMIT $4
             """,
-            query_text,
+            or_query,
             embedding_str,
             pool_size,
             limit,
