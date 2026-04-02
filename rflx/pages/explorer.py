@@ -262,21 +262,46 @@ def _chunk_inspector_tab() -> rx.Component:
     )
 
 
+def _chunk_pagination() -> rx.Component:
+    num_pages = (ExplorerState.total_chunk_count + ExplorerState.chunks_per_page - 1) // ExplorerState.chunks_per_page
+    return rx.flex(
+        rx.button(
+            "Previous",
+            variant="ghost",
+            size="2",
+            on_click=ExplorerState.prev_chunk_page,
+            disabled=ExplorerState.chunk_page == 0,
+        ),
+        rx.text(
+            "Page ",
+            (ExplorerState.chunk_page + 1).to(str),
+            " of ",
+            num_pages.to(str),
+            " (",
+            ExplorerState.total_chunk_count.to(str),
+            " chunks)",
+            size="2",
+            color="var(--gray-11)",
+        ),
+        rx.button(
+            "Next",
+            variant="ghost",
+            size="2",
+            on_click=ExplorerState.next_chunk_page,
+            disabled=(ExplorerState.chunk_page + 1) * ExplorerState.chunks_per_page >= ExplorerState.total_chunk_count,
+        ),
+        justify="between",
+        align="center",
+        width="100%",
+    )
+
+
 def _recent_chunks_list() -> rx.Component:
     return rx.vstack(
         rx.callout("Select a chunk from search results, or choose from recent chunks below.", icon="info"),
         rx.cond(
             ExplorerState.recent_chunks.length() > 0,
             rx.vstack(
-                rx.text(
-                    "Showing ",
-                    ExplorerState.recent_chunks.length().to(str),
-                    " of ",
-                    ExplorerState.total_chunk_count.to(str),
-                    " chunks",
-                    size="2",
-                    color="var(--gray-11)",
-                ),
                 rx.foreach(
                     ExplorerState.recent_chunks,
                     lambda c: rx.card(
@@ -309,6 +334,7 @@ def _recent_chunks_list() -> rx.Component:
                         width="100%",
                     ),
                 ),
+                _chunk_pagination(),
                 spacing="2",
                 width="100%",
             ),
