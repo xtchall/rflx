@@ -3,9 +3,6 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 DROP TABLE IF EXISTS chunks CASCADE;
 DROP TABLE IF EXISTS documents CASCADE;
-DROP INDEX IF EXISTS idx_chunks_embedding;
-DROP INDEX IF EXISTS idx_chunks_document_id;
-DROP INDEX IF EXISTS idx_documents_metadata;
 
 CREATE TABLE documents (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -28,10 +25,16 @@ CREATE TABLE chunks (
     chunk_index INTEGER NOT NULL,
     metadata JSONB DEFAULT '{}',
     token_count INTEGER,
+    search_vector tsvector GENERATED ALWAYS AS (to_tsvector('english', content)) STORED,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_chunks_embedding ON chunks USING ivfflat (embedding vector_cosine_ops) WITH (lists = 1);
+-- Vector similarity search (HNSW for better recall than IVFFlat)
+CREATE INDEX idx_chunks_embedding ON chunks USING hnsw (embedding vector_cosine_ops);
+
+-- Full-text keyword search
+CREATE INDEX idx_chunks_search_vector ON chunks USING GIN (search_vector);
+
 CREATE INDEX idx_chunks_document_id ON chunks (document_id);
 CREATE INDEX idx_chunks_chunk_index ON chunks (document_id, chunk_index);
 
@@ -52,7 +55,7 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
     RETURN QUERY
-    SELECT 
+    SELECT
         c.id AS chunk_id,
         c.document_id,
         c.content,
