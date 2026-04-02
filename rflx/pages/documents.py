@@ -17,18 +17,12 @@ def _upload_section() -> rx.Component:
             "Audio files will be automatically transcribed.",
             icon="info",
         ),
-        # Options row (before upload so user can set before dropping)
-        rx.checkbox(
-            "Clean database before ingestion",
-            checked=DocumentState.clean_before_ingest,
-            on_change=DocumentState.set_clean_before,
-        ),
-        # Upload dropzone — files are uploaded and ingestion starts on drop
+        # Upload dropzone — stages files without starting ingestion
         rx.upload(
             rx.vstack(
                 rx.text("Drag and drop files here or click to select", size="3"),
                 rx.text(
-                    "Ingestion starts automatically on drop",
+                    "Files will be staged for review before ingestion",
                     size="2",
                     color="var(--gray-9)",
                 ),
@@ -58,6 +52,35 @@ def _upload_section() -> rx.Component:
                 "audio/flac": [".flac"],
             },
             disabled=DocumentState.is_ingesting,
+        ),
+        # Staged files + start button
+        rx.cond(
+            DocumentState.staged_files.length() > 0,
+            rx.vstack(
+                rx.text(
+                    DocumentState.staged_files.length().to(str) + " file(s) staged:",
+                    weight="bold",
+                    size="3",
+                ),
+                rx.foreach(
+                    DocumentState.staged_files,
+                    lambda f: rx.text(f, size="2", color="var(--gray-11)"),
+                ),
+                rx.checkbox(
+                    "Clean database before ingestion",
+                    checked=DocumentState.clean_before_ingest,
+                    on_change=DocumentState.set_clean_before,
+                ),
+                rx.button(
+                    "Start Ingestion",
+                    on_click=DocumentState.start_ingestion,
+                    disabled=DocumentState.is_ingesting,
+                    size="3",
+                ),
+                spacing="2",
+                width="100%",
+            ),
+            rx.fragment(),
         ),
         # Progress
         rx.cond(

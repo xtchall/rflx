@@ -214,6 +214,10 @@ class ChatState(rx.State):
                 self.current_response = ""
                 self.is_streaming = False
 
+    def send_suggestion(self, suggestion: str):
+        """Handle a suggestion chip click — submit it as a message."""
+        return ChatState.handle_submit({"message": suggestion})
+
     def clear_chat(self):
         """Clear chat history."""
         self.messages = []

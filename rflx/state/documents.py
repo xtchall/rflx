@@ -51,6 +51,7 @@ class DocumentState(rx.State):
     docs_per_page: int = 10
 
     # Upload / ingestion
+    staged_files: list[str] = []
     is_ingesting: bool = False
     ingestion_progress: float = 0.0
     ingestion_status: str = ""
@@ -127,20 +128,29 @@ class DocumentState(rx.State):
         self.use_semantic_chunking = val
 
     async def handle_upload(self, files: list[rx.UploadFile]):
-        """Receive uploaded files, save to temp dir, then start ingestion."""
+        """Stage uploaded files to temp dir without starting ingestion."""
         if self.is_ingesting:
             return
 
         temp_dir = tempfile.mkdtemp()
         self._temp_dir = temp_dir
 
+        names = []
         for file in files:
             data = await file.read()
             path = Path(temp_dir) / file.filename
             path.write_bytes(data)
+            names.append(file.filename)
 
-        self.ingestion_status = f"Saved {len(files)} file(s). Starting ingestion..."
+        self.staged_files = names
+        self.ingestion_status = ""
         self.ingestion_results = []
+
+    def start_ingestion(self):
+        """Validate staged files and trigger ingestion."""
+        if not self.staged_files or self.is_ingesting:
+            return
+        self.ingestion_status = f"Starting ingestion of {len(self.staged_files)} file(s)..."
         return DocumentState.run_ingestion
 
     @rx.event(background=True)
@@ -201,6 +211,7 @@ class DocumentState(rx.State):
                         f"Complete: {len(results)} docs, {total_chunks} chunks"
                     )
                 self.is_ingesting = False
+                self.staged_files = []
 
             # Refresh document list
             async with self:

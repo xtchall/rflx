@@ -183,15 +183,25 @@ def _recent_documents_list() -> rx.Component:
     )
 
 
+def _breadcrumb(*segments) -> rx.Component:
+    """Render a breadcrumb trail from (label, on_click_or_None) pairs."""
+    items = []
+    for i, (label, action) in enumerate(segments):
+        if i > 0:
+            items.append(rx.text(" > ", size="2", color="var(--gray-8)"))
+        if action is not None:
+            items.append(rx.link(label, size="2", on_click=action, color="var(--accent-11)", cursor="pointer"))
+        else:
+            items.append(rx.text(label, size="2", weight="bold"))
+    return rx.flex(*items, align="center", gap="1")
+
+
 def _document_detail_view() -> rx.Component:
     doc = ExplorerState.document_detail
     return rx.vstack(
-        rx.flex(
-            rx.heading(doc.title, size="5"),
-            rx.spacer(),
-            rx.button(rx.hstack(rx.icon("arrow_left", size=14), rx.text("Back"), spacing="1"), variant="ghost", size="2", on_click=ExplorerState.back_from_document),
-            width="100%",
-            align="center",
+        _breadcrumb(
+            ("Documents", ExplorerState.back_from_document),
+            (doc.title, None),
         ),
         rx.text("Source: ", doc.source, size="2", color="var(--gray-11)"),
         rx.hstack(
@@ -303,15 +313,12 @@ def _recent_chunks_list() -> rx.Component:
 def _chunk_detail_view() -> rx.Component:
     c = ExplorerState.chunk_detail
     return rx.vstack(
-        rx.flex(
-            rx.heading("Chunk from: " + c.title, size="5"),
-            rx.spacer(),
-            rx.button(rx.hstack(rx.icon("arrow_left", size=14), rx.text("Back"), spacing="1"), variant="ghost", size="2", on_click=ExplorerState.back_from_chunk),
-            width="100%",
-            align="center",
+        _breadcrumb(
+            ("Chunks", ExplorerState.back_from_chunk),
+            (c.title, ExplorerState.view_document(c.document_id)),
+            ("Chunk " + (c.chunk_index + 1).to(str), None),
         ),
         rx.text("Source: ", c.source, size="2", color="var(--gray-11)"),
-        rx.text("Chunk index: ", c.chunk_index.to(str), size="2", color="var(--gray-9)"),
         rx.separator(),
         rx.heading("Content", size="4"),
         rx.markdown(c.content),

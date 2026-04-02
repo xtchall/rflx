@@ -12,7 +12,8 @@ def _message_bubble(msg: ChatMessage) -> rx.Component:
 
     bubble = rx.box(
         rx.markdown(msg.content, size="3"),
-        background=rx.cond(is_user, "var(--accent-3)", "var(--gray-3)"),
+        background=rx.cond(is_user, "var(--accent-4)", "var(--gray-3)"),
+        color=rx.cond(is_user, "var(--accent-12)", "var(--gray-12)"),
         padding="12px 16px",
         border_radius="12px",
         max_width="75%",
@@ -81,21 +82,33 @@ def _message_bubble(msg: ChatMessage) -> rx.Component:
     )
 
 
+def _suggestion_chip(text: str) -> rx.Component:
+    return rx.button(
+        text,
+        variant="outline",
+        size="2",
+        on_click=ChatState.send_suggestion(text),
+    )
+
+
 def _empty_state() -> rx.Component:
-    """Show placeholder when no messages exist."""
+    """Show placeholder with clickable suggestion chips."""
     return rx.cond(
         ChatState.messages.length() == 0,
         rx.center(
             rx.vstack(
                 rx.icon("message_circle", size=32, color="var(--gray-7)"),
                 rx.text("Ask anything about your documents", size="3", color="var(--gray-9)"),
-                rx.text(
-                    "Try: \"What are the key findings?\" or \"Summarize the handbook\"",
-                    size="2",
-                    color="var(--gray-8)",
+                rx.flex(
+                    _suggestion_chip("What are the key highlights from Q4?"),
+                    _suggestion_chip("Summarize the team handbook"),
+                    _suggestion_chip("What AI models does NeuralFlow use?"),
+                    wrap="wrap",
+                    justify="center",
+                    gap="2",
                 ),
                 align="center",
-                spacing="2",
+                spacing="3",
             ),
             flex="1",
         ),
@@ -212,4 +225,6 @@ def chat_page() -> rx.Component:
         padding="4",
         gap="3",
         width="100%",
+        max_width="800px",
+        margin_x="auto",
     )
