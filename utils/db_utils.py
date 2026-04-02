@@ -304,8 +304,11 @@ def _build_or_tsquery(query_text: str) -> str:
     For RAG retrieval, OR is better — a chunk matching 'retention' and 'rate'
     should surface even if it doesn't also contain 'q4' and '2024'.
     """
-    # Strip non-alphanumeric, split into words, filter empties
-    words = [w.strip() for w in query_text.split() if w.strip()]
+    import re
+
+    # Keep only alphanumeric and spaces, then split
+    cleaned = re.sub(r"[^\w\s]", " ", query_text)
+    words = [w for w in cleaned.split() if len(w) >= 2]
     if not words:
         return ""
     return " | ".join(words)
