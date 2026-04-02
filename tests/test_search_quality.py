@@ -12,16 +12,19 @@ import pytest
 from utils.db_utils import (
     _build_or_tsquery,
     acquire,
+    embed_for_search,
     hybrid_search,
     initialize_database,
     search_vectors,
 )
-from utils.providers import get_embedding_client, get_embedding_model
+
+# Dedicated event loop for sync test wrappers (avoids deprecated get_event_loop)
+_loop = asyncio.new_event_loop()
 
 
 def run(coro):
-    """Run an async function synchronously."""
-    return asyncio.get_event_loop().run_until_complete(coro)
+    """Run an async function synchronously on the test event loop."""
+    return _loop.run_until_complete(coro)
 
 
 # ---------------------------------------------------------------------------
@@ -38,14 +41,9 @@ def setup_db():
 
 def _embed(query: str) -> str:
     """Embed a query, caching results to avoid repeated API calls."""
-    if query in _embed_cache:
-        return _embed_cache[query]
-    client = get_embedding_client()
-    model = get_embedding_model()
-    response = run(client.embeddings.create(input=query, model=model))
-    result = "[" + ",".join(map(str, response.data[0].embedding)) + "]"
-    _embed_cache[query] = result
-    return result
+    if query not in _embed_cache:
+        _embed_cache[query] = run(embed_for_search(query))
+    return _embed_cache[query]
 
 
 # ---------------------------------------------------------------------------

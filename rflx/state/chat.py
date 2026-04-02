@@ -69,10 +69,19 @@ def _get_agent() -> Agent:
     if _agent is not None:
         return _agent
 
+    from pydantic_ai.settings import ModelSettings
+
     from rflx.state.settings import DEFAULT_SYSTEM_PROMPT, get_config
 
     system_prompt = get_config("system_prompt", DEFAULT_SYSTEM_PROMPT)
-    agent = Agent(get_llm_model(), system_prompt=system_prompt)
+    temperature = get_config("temperature", 0.7)
+    max_tokens = get_config("max_tokens", 2000)
+
+    agent = Agent(
+        get_llm_model(),
+        system_prompt=system_prompt,
+        model_settings=ModelSettings(temperature=temperature, max_tokens=max_tokens),
+    )
 
     @agent.tool
     async def search_kb(ctx, query: str, limit: int = 5) -> str:

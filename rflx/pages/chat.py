@@ -3,6 +3,7 @@
 import reflex as rx
 
 from rflx.state.chat import ChatMessage, ChatState
+from rflx.state.settings import SettingsState
 
 
 def _message_bubble(msg: ChatMessage) -> rx.Component:
@@ -18,9 +19,9 @@ def _message_bubble(msg: ChatMessage) -> rx.Component:
         align_self=rx.cond(is_user, "flex-end", "flex-start"),
     )
 
-    # Sources accordion (assistant messages only)
+    # Sources accordion (gated by settings toggle)
     sources_section = rx.cond(
-        (~is_user) & (msg.sources.length() > 0),
+        SettingsState.show_sources & (~is_user) & (msg.sources.length() > 0),
         rx.accordion.root(
             rx.accordion.item(
                 header="Sources",
@@ -45,9 +46,9 @@ def _message_bubble(msg: ChatMessage) -> rx.Component:
         rx.fragment(),
     )
 
-    # Tool calls accordion (assistant messages only)
+    # Tool calls accordion (gated by settings toggle)
     tools_section = rx.cond(
-        (~is_user) & (msg.tool_calls.length() > 0),
+        SettingsState.show_tool_calls & (~is_user) & (msg.tool_calls.length() > 0),
         rx.accordion.root(
             rx.accordion.item(
                 header="Tool Calls",
