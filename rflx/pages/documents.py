@@ -173,12 +173,28 @@ def _document_card(doc: DocumentInfo) -> rx.Component:
                 spacing="1",
                 flex="1",
             ),
-            rx.button(
-                "Delete",
-                variant="ghost",
-                color_scheme="red",
-                size="1",
-                on_click=DocumentState.delete_document(doc.id),
+            rx.alert_dialog.root(
+                rx.alert_dialog.trigger(
+                    rx.button("Delete", variant="ghost", color_scheme="red", size="2"),
+                ),
+                rx.alert_dialog.content(
+                    rx.alert_dialog.title("Delete Document"),
+                    rx.alert_dialog.description(
+                        "This will permanently delete this document and all its chunks.",
+                    ),
+                    rx.flex(
+                        rx.alert_dialog.cancel(rx.button("Cancel", variant="soft")),
+                        rx.alert_dialog.action(
+                            rx.button(
+                                "Delete",
+                                color_scheme="red",
+                                on_click=DocumentState.delete_document(doc.id),
+                            ),
+                        ),
+                        spacing="3",
+                        justify="end",
+                    ),
+                ),
             ),
             justify="between",
             align="start",

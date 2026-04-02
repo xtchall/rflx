@@ -108,13 +108,13 @@ def _search_result_card(result: SearchResult) -> rx.Component:
                 rx.button(
                     "View Document",
                     variant="ghost",
-                    size="1",
+                    size="2",
                     on_click=ExplorerState.view_document(result.document_id),
                 ),
                 rx.button(
                     "Inspect Chunk",
                     variant="ghost",
-                    size="1",
+                    size="2",
                     on_click=ExplorerState.inspect_chunk(result.chunk_id),
                 ),
                 spacing="2",
@@ -164,7 +164,7 @@ def _recent_documents_list() -> rx.Component:
                             rx.button(
                                 "View",
                                 variant="ghost",
-                                size="1",
+                                size="2",
                                 on_click=ExplorerState.view_document(doc["id"].to(str)),
                             ),
                             align="center",
@@ -211,7 +211,13 @@ def _document_detail_view() -> rx.Component:
             width="100%",
         ),
         rx.heading("Chunks", size="4"),
-        rx.foreach(doc.chunks, _chunk_accordion_item),
+        rx.accordion.root(
+            rx.foreach(doc.chunks, _chunk_accordion_item),
+            type="multiple",
+            collapsible=True,
+            variant="surface",
+            width="100%",
+        ),
         width="100%",
         spacing="3",
     )
@@ -219,23 +225,17 @@ def _document_detail_view() -> rx.Component:
 
 def _chunk_accordion_item(chunk: ChunkInfo) -> rx.Component:
     label = "Chunk " + (chunk.chunk_index + 1).to(str)
-    return rx.accordion.root(
-        rx.accordion.item(
-            header=label,
-            content=rx.vstack(
-                rx.markdown(chunk.content),
-                rx.cond(
-                    chunk.token_count,
-                    rx.text("Tokens: ", chunk.token_count.to(str), size="1", color="var(--gray-9)"),
-                    rx.fragment(),
-                ),
-                spacing="2",
+    return rx.accordion.item(
+        header=label,
+        content=rx.vstack(
+            rx.markdown(chunk.content),
+            rx.cond(
+                chunk.token_count,
+                rx.text("Tokens: ", chunk.token_count.to(str), size="1", color="var(--gray-9)"),
+                rx.fragment(),
             ),
+            spacing="2",
         ),
-        type="single",
-        collapsible=True,
-        variant="ghost",
-        width="100%",
     )
 
 
@@ -281,7 +281,7 @@ def _recent_chunks_list() -> rx.Component:
                             rx.button(
                                 "Inspect",
                                 variant="ghost",
-                                size="1",
+                                size="2",
                                 on_click=ExplorerState.inspect_chunk(c["id"].to(str)),
                             ),
                             align="start",
@@ -407,7 +407,8 @@ def explorer_page() -> rx.Component:
             rx.tabs.content(_search_tab(), value="search", padding_top="4"),
             rx.tabs.content(_document_viewer_tab(), value="documents", padding_top="4"),
             rx.tabs.content(_chunk_inspector_tab(), value="chunks", padding_top="4"),
-            default_value="search",
+            value=ExplorerState.active_tab,
+            on_change=ExplorerState.set_active_tab,
             width="100%",
         ),
         width="100%",

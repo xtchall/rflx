@@ -84,6 +84,9 @@ class SimilarChunk(BaseModel):
 class ExplorerState(rx.State):
     """State for the explorer page."""
 
+    # Tab control
+    active_tab: str = "search"
+
     # Search tab
     search_query: str = ""
     search_limit: int = 10
@@ -101,6 +104,9 @@ class ExplorerState(rx.State):
     recent_chunks: list[dict[str, Any]] = []
     similar_chunks: list[SimilarChunk] = []
     is_finding_similar: bool = False
+
+    def set_active_tab(self, val: str):
+        self.active_tab = val
 
     def set_search_query(self, val: str):
         self.search_query = val
@@ -202,6 +208,7 @@ class ExplorerState(rx.State):
             chunks=chunks,
         )
         self.viewing_document = True
+        self.active_tab = "documents"
 
     def back_from_document(self):
         self.viewing_document = False
@@ -245,6 +252,7 @@ class ExplorerState(rx.State):
             source=row.get("source", ""),
         )
         self.viewing_chunk = True
+        self.active_tab = "chunks"
         self.similar_chunks = []
 
     def back_from_chunk(self):
