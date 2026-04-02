@@ -280,8 +280,12 @@ class ExplorerState(rx.State):
                 self.is_finding_similar = False
             return
 
-        embedding = row["embedding"]
-        embedding_str = "[" + ",".join(map(str, embedding)) + "]"
+        raw_embedding = row["embedding"]
+        # pgvector returns a string like "[0.1,0.2,...]" — pass through directly
+        if isinstance(raw_embedding, str):
+            embedding_str = raw_embedding
+        else:
+            embedding_str = "[" + ",".join(map(str, raw_embedding)) + "]"
 
         results = await db_find_similar(embedding_str, limit=6, exclude_chunk_id=chunk_id)
 
